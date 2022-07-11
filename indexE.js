@@ -1,3 +1,4 @@
+function change777s() {
 //complicated maths to resolve torque axes
   //𝐹𝑠=|𝐹⃗ |cos(𝜃𝑠,𝐹)
 function splitAxes(force) {
@@ -40,7 +41,7 @@ function tiller() {
   }
 }
 
-//spoilers/flaps shake
+//spoilers and flaps shake
 geofs.animation.values.spoilersShake = null;
 geofs.animation.values.flapsShake = null;
 function getShake() {
@@ -498,7 +499,7 @@ function doRadioAltCall(){
 }
 
   
-setInterval(function(){
+effectInterval = setInterval(function(){
   groundEffect()
   getShake()
   computeYaw()
@@ -515,3 +516,4 @@ setInterval(function(){
   tiller()
   stallForces()
 }, 20)
+}
