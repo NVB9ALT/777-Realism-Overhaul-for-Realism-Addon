@@ -200,132 +200,6 @@ geofs.aircraft.instance.definition.sounds[2].effects.volume.ratio = 100
 geofs.aircraft.instance.definition.sounds[3].effects.volume.ratio = 100
 geofs.aircraft.instance.definition.sounds[4].effects.volume.ratio = 100
 
-// get running average to dampen control inputs
-let pitchInputs = [0, 0, 0, 0, 0, 0, 0];
-let rollInputs = [0, 0, 0, 0, 0, 0, 0];
-let yawInputs = [0, 0, 0, 0, 0, 0, 0];
-geofs.animation.values.averagePitch = null;
-geofs.animation.values.averageRoll = null;
-geofs.animation.values.averageYaw = null;
-geofs.animation.values.outerAveragePitch = null;
-geofs.animation.values.outerAverageRoll = null;
-geofs.animation.values.outerAverageYaw = null;
-function pushInputs(){
-  pitchInputs.push(geofs.animation.values.computedPitch);
-  rollInputs.push(geofs.animation.values.roll);
-  yawInputs.push(geofs.animation.values.computedYaw);
-}
-
-function computeOutputs(){
-  if (geofs.aircraft.instance.setup.autopilot) {
-    geofs.animation.values.outerAveragePitch = geofs.animation.values.pitch
-geofs.animation.values.outerAverageRoll = geofs.animation.values.roll
-geofs.animation.values.outerAverageYaw = geofs.animation.values.yaw
-    return;
-  }
-  else {
-var pitchcheck = movingAvg(pitchInputs, 6, 6);
-var rollcheck = movingAvg(rollInputs, 6, 6);
- var yawcheck = movingAvg(yawInputs, 6, 6);
-  geofs.animation.values.averagePitch = pitchcheck[pitchcheck.length - 3]
-geofs.animation.values.averageRoll = rollcheck[rollcheck.length - 3];
-geofs.animation.values.averageYaw = yawcheck[yawcheck.length - 3];
-  geofs.animation.values.outerAveragePitch = clamp(geofs.animation.values.averagePitch / (geofs.animation.values.kias / 200), -1, 1);
-geofs.animation.values.outerAverageRoll = clamp(geofs.animation.values.averageRoll / (geofs.animation.values.kias / 100), -1, 1);
-geofs.animation.values.outerAverageYaw = clamp(geofs.animation.values.averageYaw / (geofs.animation.values.kias / 100), -1, 1);
-  }
-}
-
-function movingAvg(array, countBefore, countAfter) {
-  if (countAfter == undefined) countAfter = 0;
-  const result = [];
-  for (let i = 0; i < array.length; i++) {
-    const subArr = array.slice(Math.max(i - countBefore, 0), Math.min(i + countAfter + 1, array.length));
-    const avg = subArr.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0) / subArr.length;
-    result.push(avg);
-  }
-  return result;
-}
-geofs.aircraft.instance.parts.aileronleft.animations[0].value = "outerAverageRoll"
-geofs.aircraft.instance.parts.aileronright.animations[0].value = "outerAverageRoll"
-geofs.aircraft.instance.parts.flaperonleft.animations[0].value = "averageRoll"
-geofs.aircraft.instance.parts.flaperonright.animations[0].value = "averageRoll"
-geofs.aircraft.instance.parts.elevleft.animations[0].value = "outerAveragePitch"
-geofs.aircraft.instance.parts.elevright.animations[0].value = "outerAveragePitch"
-geofs.aircraft.instance.parts.rudder.animations[0].value = "averageYaw"
-
-geofs.animation.values.computedPitch = 0
-geofs.animation.values.computedYaw = 0
-geofs.animation.values.computedRoll = 0
-let lastPitchValue = 0
-let gLimitedPitch =  0
-let increment = 0
-let deadZone = 0.01
-let tiltToHold = 0
-let pitchStage1 = 0
-function computePitch(){
-//implement tilt hold
-  if (geofs.animation.values.pitch <= deadZone && geofs.animation.values.pitch >= -deadZone){
-    
-  pitchStage1 = -(tiltToHold - geofs.animation.values.atilt) / 10
-    
-}
-  else{
-    tiltToHold = geofs.animation.values.atilt
-    pitchStage1 = geofs.animation.values.pitch
-  }
-  geofs.animation.values.computedPitch = clamp(pitchStage1, -1, 1)
-}
-
-function computeYaw(){
-      if (geofs.animation.values.atilt >= -70 && geofs.animation.values.atilt <= 70){
-  if (geofs.animation.values.gearPosition == 1){
-    if (geofs.animation.values.aroll >= -75 && geofs.animation.values.aroll <= 75){
-  geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw - ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1)
-    }
-    if (geofs.animation.values.aroll <= -75 && geofs.animation.values.aroll >= -90){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw - ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1)
-    }
-        if (geofs.animation.values.aroll <= -90 && geofs.animation.values.aroll >= -105){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw + ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1)
-    }
-    if (geofs.animation.values.aroll <= 75 && geofs.animation.values.aroll >= 90){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw - ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1)
-    }
-        if (geofs.animation.values.aroll <= 90 && geofs.animation.values.aroll >= 105){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw + ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1)
-    }
-        if (geofs.animation.values.aroll <= -75 && geofs.animation.values.aroll >= 75){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw + ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1)
-    }
-  }
-  else{
-    if (geofs.animation.values.aroll >= -75 && geofs.animation.values.aroll <= 75){
-  geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw - ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1) / 2
-    }
-    if (geofs.animation.values.aroll <= -75 && geofs.animation.values.aroll >= -90){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw - ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1) / 2
-    }
-        if (geofs.animation.values.aroll <= -90 && geofs.animation.values.aroll >= -105){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw + ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1) / 2
-    }
-    if (geofs.animation.values.aroll <= 75 && geofs.animation.values.aroll >= 90){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw - ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1) / 2
-    }
-        if (geofs.animation.values.aroll <= 90 && geofs.animation.values.aroll >= 105){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw + ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1) / 2
-    }
-        if (geofs.animation.values.aroll >= 75 && geofs.animation.values.aroll <= -75){
-        geofs.animation.values.computedYaw = clamp(geofs.animation.values.yaw + ( geofs.aircraft.instance.htrAngularSpeed[0]*50), -1, 1) / 2
-    }
-  }
-                }
-  else{
-    geofs.animation.values.computedYaw = geofs.animation.values.yaw
-  }
-}
-
-
 //implement smooth gear tilting
 let restingPoint = 16.152139372973117
 geofs.animation.values.gearTilt = null;
@@ -336,12 +210,12 @@ function tiltGear(){
   }
 }
 
-geofs.aircraft.instance.parts.bogeyright.animations[0].value = "gearTilt"
-geofs.aircraft.instance.parts.bogeyleft.animations[0].value = "gearTilt"
-geofs.aircraft.instance.parts.bogeyright.animations[0].offset = -27
-geofs.aircraft.instance.parts.bogeyleft.animations[0].offset = -27
- delete geofs.aircraft.instance.parts.bogeyright.animations[0].lt
-delete geofs.aircraft.instance.parts.bogeyleft.animations[0].lt
+geofs.aircraft.instance.definition.parts[87].animations[0].value = "gearTilt"
+geofs.aircraft.instance.definition.parts[98].animations[0].value = "gearTilt"
+geofs.aircraft.instance.definition.parts[87].animations[0].offset = -27
+geofs.aircraft.instance.definition.parts[98].animations[0].offset = -27
+ delete geofs.aircraft.instance.definition.parts[87].animations[0].lt
+delete geofs.aircraft.instance.definition.parts[98].animations[0].lt
 
 
 
@@ -502,11 +376,7 @@ function doRadioAltCall(){
 effectInterval = setInterval(function(){
   groundEffect()
   getShake()
-  computeYaw()
   tiltGear();
-  computePitch();
-  pushInputs();
-  computeOutputs();
   resetLift2();
   getFlapChange();
   getGearFlapsWarn()
